@@ -1,0 +1,96 @@
+apply plugin: 'java'
+
+version = '1.0'
+
+ext {
+    felixCoordinates = 'org.apache.felix:org.apache.felix.framework:4.3.0-SNAPSHOT'
+    bndCoordinates = 'biz.aQute.bnd:biz.aQute.bnd:2.3.0.20140317-201006'
+    felixRepo = 'http://localhost:8081/artifactory/apache-felix'
+    bndRepo = 'http://localhost:8081/artifactory/libs-release-local'
+}
+
+repositories {
+    maven {
+        // Everything built by Apache Felix is here.
+        url felixRepo
+    }
+    maven {
+        // Bnd and BndLib are here.
+        url bndRepo
+    }
+    mavenCentral()
+}
+
+configurations {
+    bndTask
+    launcher
+    felixFramework
+}
+
+dependencies {
+    felixFramework felixCoordinates
+    compile configurations.felixFramework
+    bndTask bndCoordinates
+    launcher files("$buildDir/classes/main") {
+        builtBy 'compile'
+    }
+}
+
+task loadBndTask << {
+    ant.taskdef(name: 'bnd', 
+        classname: 'aQute.bnd.ant.BndTask',
+        classpath: configurations.bndTask.asPath)
+}
+
+// Run this to get a copy of the Felix framework from the
+// Artifactory repository into the local 'lib' directory.  
+task installFramework(type: Copy) {
+    from configurations.felixFramework
+    into 'lib'
+}
+
+task launcherEmbeddedJar(dependsOn: [jar, loadBndTask, installFramework]) {
+    inputs.file file('launcher-embedded.bnd')
+    outputs.file file("$buildDir/libs/launcher-embedded.jar")
+}
+
+launcherEmbeddedJar << {
+    ant.bnd(files: 'launcher-embedded.bnd',
+        classpath: configurations.launcher.asPath,
+        output: "$buildDir/libs/launcher-embedded.jar")
+}
+
+task launcherExternalJar(dependsOn: [jar, loadBndTask, installFramework]) {
+    inputs.file file('launcher-external.bnd')
+    outputs.file file("$buildDir/libs/launcher-external.jar")
+}
+
+launcherExternalJar << {
+    ant.bnd(files: 'launcher-external.bnd',
+        classpath: configurations.launcher.asPath,
+        output: "$buildDir/libs/launcher-external.jar")    
+}
+
+// Demo use only.  Use the shell script "./run-embedded.sh" instead.
+task runEmbedded(dependsOn: launcherEmbeddedJar, type: JavaExec) {
+    main = 'org.apache.felix.main.Main'
+    classpath = launcherEmbeddedJar.outputs.files
+    standardInput = System.in
+}
+
+// Demo use only.  Use the shell script "./run-external.sh" instead.
+task runExternal(dependsOn: launcherExternalJar, type: JavaExec) {
+    main = 'org.apache.felix.main.Main'
+    classpath = launcherExternalJar.outputs.files + configurations.compile
+    // Need an InputStream, or the gogo shell exits immediately
+    standardInput = System.in
+}
+
+artifacts {
+    archives(file("$buildDir/libs/launcher-embedded.jar")) {
+        builtBy launcherEmbeddedJar
+    }
+    archives(file("$buildDir/libs/launcher-external.jar")) {
+        builtBy launcherExternalJar
+    }
+}

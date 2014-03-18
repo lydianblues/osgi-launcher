@@ -1,0 +1,11 @@
+Bundle-Vendor: The Apache Software Foundation
+Bundle-Name: Apacle Felix
+Bundle-SymbolicName org.apache.felix.main
+Bundle-Version: 4.3.0.SNAPSHOT
+Main-Class: org.apache.felix.main.Main
+Include-Resource: @lib/org.apache.felix.framework-4.3.0-SNAPSHOT.jar
+Export-Package: \
+    org.osgi.*,\
+    org.apache.felix.*
+Import-Package: !*
+Private-Package: org.apache.felix.main.*

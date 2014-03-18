@@ -1,0 +1,7 @@
+Bundle-Vendor: The Apache Software Foundation
+Bundle-Name: Apacle Felix
+Bundle-SymbolicName org.apache.felix.main
+Bundle-Version: 4.3.0.SNAPSHOT
+Main-Class: org.apache.felix.main.Main
+Private-Package: org.apache.felix.main.*
+Import-Package: !*
